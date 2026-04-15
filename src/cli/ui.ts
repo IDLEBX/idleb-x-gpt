@@ -1,5 +1,6 @@
+// src/cli/ui.ts
 import color from "picocolors";
-import { BOT_INFO } from "../config";
+import { BOT_INFO } from "../config.js";
 
 export const print = (text: string) => {
   console.log(color.green("◇") + "  " + text);
