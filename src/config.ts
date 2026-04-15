@@ -1,147 +1,138 @@
-// src/handlers/ai-config.ts
-import { config } from "../config";
+// src/config.ts
+import process from "process";
+import { TranscriptionMode } from "./types/transcription-mode.js";
+import { TTSMode } from "./types/tts-mode.js";
+import { AWSPollyEngine } from "./types/aws-polly-engine.js";
 
-// تعريف هيكل الـ AI Config
-export interface IAiConfig {
-  gpt: {
-    apiKey: string;
-    maxModelTokens: number;
-  };
-  dalle: {
-    size: string;
-  };
-  general: {
-    whitelist: string[];
-    settings: any;
-  };
-  transcription: {
-    enabled: boolean;
-    mode: string;
-  };
-  tts: {
-    enabled: boolean;
-  };
-  sd: {
-    model: string;
-  };
-  commandsMap: {
-    [key: string]: any;
-  };
-}
+import dotenv from "dotenv";
+dotenv.config();
 
-// القيم الافتراضية للإعدادات
-export const aiConfig: IAiConfig = {
-  gpt: {
-    apiKey: process.env.OPENAI_API_KEY || "",
-    maxModelTokens: parseInt(process.env.MAX_MODEL_TOKENS || "4096"),
-  },
-  dalle: {
-    size: process.env.DALLE_IMAGE_SIZE || "1024x1024",
-  },
-  general: {
-    whitelist: process.env.WHITELISTED_PHONE_NUMBERS?.split(",") || [],
-    settings: {},
-  },
-  transcription: {
-    enabled: process.env.TRANSCRIPTION_ENABLED === "true",
-    mode: process.env.TRANSCRIPTION_MODE || "local",
-  },
-  tts: {
-    enabled: process.env.TTS_ENABLED === "true",
-  },
-  sd: {
-    model: process.env.STABLE_DIFFUSION_MODEL || "runwayml/stable-diffusion-v1-5",
-  },
-  commandsMap: {},
+// معلومات البوت الجديدة
+export const BOT_INFO = {
+  name: "IDLEB X GPT",
+  developer: "IDLEB X",
+  instagram: "xlb_me",
+  github: "IDLEBX",
+  version: "2.0.0",
+  website: "https://github.com/IDLEBX"
 };
 
-// تهيئة الإعدادات
-export function initAiConfig() {
-  console.log("🚀 تهيئة إعدادات الذكاء الاصطناعي...");
-  
-  // التأكد من وجود مفتاح API
-  if (!aiConfig.gpt.apiKey) {
-    console.warn("⚠️ تحذير: OPENAI_API_KEY غير موجود في ملف .env");
-    console.warn("⚠️ البوت راح يشتغل لكن بدون ذكاء اصطناعي!");
-  } else {
-    console.log(`✅ تم العثور على مفتاح API: ${aiConfig.gpt.apiKey.substring(0, 15)}...`);
+export const MESSAGES = {
+  welcome: `🌟 *مرحباً بك في IDLEB X GPT* 🌟\n\nأنا بوت ذكاء اصطناعي مصمم خصيصاً لك!\n\n📢 المطور: IDLEB X\n📷 انستجرام: xlb_me\n💻 GitHub: IDLEX\n\n✨ استمتع بالتجربة!`,
+
+  footer: `\n━━━━━━━━━━━━━━━\n🤖 IDLEB X GPT | مطور: IDLEB X`,
+
+  limitReached: `⚠️ *لقد استنفذت رسائلك المجانية اليومية!* ⚠️\n\n📊 عدد رسائلك اليوم: 5 من 5\n💎 للترقية والتواصل: @xlb_me`,
+
+  subscriptionRequired: `💎 *هذه الميزة للاشتراكات المدفوعة فقط*\n\nللاشتراك، تواصل مع المطور:\n📷 انستجرام: xlb_me\n💻 GitHub: IDLEBX`
+};
+
+interface IConfig {
+  whitelistedPhoneNumbers: string[];
+  whitelistedEnabled: boolean;
+  openAIModel: string;
+  openAIAPIKeys: string[];
+  maxModelTokens: number;
+  prePrompt: string | undefined;
+  prefixEnabled: boolean;
+  prefixSkippedForMe: boolean;
+  gptPrefix: string;
+  dallePrefix: string;
+  stableDiffusionPrefix: string;
+  langChainPrefix: string;
+  resetPrefix: string;
+  aiConfigPrefix: string;
+  groupchatsEnabled: boolean;
+  promptModerationEnabled: boolean;
+  promptModerationBlacklistedCategories: string[];
+  awsAccessKeyId: string;
+  awsSecretAccessKey: string;
+  awsRegion: string;
+  awsPollyVoiceId: string;
+  awsPollyEngine: AWSPollyEngine;
+  speechServerUrl: string;
+  whisperServerUrl: string;
+  openAIServerUrl: string;
+  whisperApiKey: string;
+  ttsEnabled: boolean;
+  ttsMode: TTSMode;
+  ttsTranscriptionResponse: boolean;
+  transcriptionEnabled: boolean;
+  transcriptionMode: TranscriptionMode;
+  transcriptionLanguage: string;
+}
+
+export const config: IConfig = {
+  whitelistedPhoneNumbers: process.env.WHITELISTED_PHONE_NUMBERS?.split(",") || [],
+  whitelistedEnabled: getEnvBooleanWithDefault("WHITELISTED_ENABLED", false),
+  openAIAPIKeys: (process.env.OPENAI_API_KEYS || process.env.OPENAI_API_KEY || "").split(",").filter((key) => !!key),
+  openAIModel: process.env.OPENAI_GPT_MODEL || "openai/gpt-3.5-turbo",
+  maxModelTokens: getEnvMaxModelTokens(),
+  prePrompt: process.env.PRE_PROMPT,
+  prefixEnabled: getEnvBooleanWithDefault("PREFIX_ENABLED", false),
+  prefixSkippedForMe: getEnvBooleanWithDefault("PREFIX_SKIPPED_FOR_ME", true),
+  gptPrefix: process.env.GPT_PREFIX || "!gpt",
+  dallePrefix: process.env.DALLE_PREFIX || "!dalle",
+  stableDiffusionPrefix: process.env.STABLE_DIFFUSION_PREFIX || "!sd",
+  resetPrefix: process.env.RESET_PREFIX || "!reset",
+  aiConfigPrefix: process.env.AI_CONFIG_PREFIX || "!config",
+  langChainPrefix: process.env.LANGCHAIN_PREFIX || "!lang",
+  groupchatsEnabled: getEnvBooleanWithDefault("GROUPCHATS_ENABLED", true),
+  promptModerationEnabled: getEnvBooleanWithDefault("PROMPT_MODERATION_ENABLED", false),
+  promptModerationBlacklistedCategories: getEnvPromptModerationBlacklistedCategories(),
+  awsAccessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
+  awsSecretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
+  awsRegion: process.env.AWS_REGION || "",
+  awsPollyVoiceId: process.env.AWS_POLLY_VOICE_ID || "",
+  awsPollyEngine: getEnvAWSPollyVoiceEngine(),
+  speechServerUrl: process.env.SPEECH_API_URL || "https://speech-service.verlekar.com",
+  whisperServerUrl: process.env.WHISPER_API_URL || "https://transcribe.whisperapi.com",
+  openAIServerUrl: process.env.OPENAI_API_URL || "https://api.openai.com/v1/audio/transcriptions",
+  whisperApiKey: process.env.WHISPER_API_KEY || "",
+  ttsEnabled: getEnvBooleanWithDefault("TTS_ENABLED", false),
+  ttsMode: getEnvTTSMode(),
+  ttsTranscriptionResponse: getEnvBooleanWithDefault("TTS_TRANSCRIPTION_RESPONSE_ENABLED", true),
+  transcriptionEnabled: getEnvBooleanWithDefault("TRANSCRIPTION_ENABLED", false),
+  transcriptionMode: getEnvTranscriptionMode(),
+  transcriptionLanguage: process.env.TRANSCRIPTION_LANGUAGE || ""
+};
+
+function getEnvMaxModelTokens() {
+  const envValue = process.env.MAX_MODEL_TOKENS;
+  if (envValue == undefined || envValue == "") return 4096;
+  return parseInt(envValue);
+}
+
+function getEnvBooleanWithDefault(key: string, defaultValue: boolean): boolean {
+  const envValue = process.env[key]?.toLowerCase();
+  if (envValue == undefined || envValue == "") return defaultValue;
+  return envValue == "true";
+}
+
+function getEnvPromptModerationBlacklistedCategories(): string[] {
+  const envValue = process.env.PROMPT_MODERATION_BLACKLISTED_CATEGORIES;
+  if (envValue == undefined || envValue == "") {
+    return ["hate", "hate/threatening", "self-harm", "sexual", "sexual/minors", "violence", "violence/graphic"];
   }
-  
-  console.log(`📌 إعدادات GPT:`);
-  console.log(`   • maxModelTokens: ${aiConfig.gpt.maxModelTokens}`);
-  console.log(`📌 إعدادات DALL-E:`);
-  console.log(`   • size: ${aiConfig.dalle.size}`);
-  console.log(`📌 إعدادات الترجمة الصوتية:`);
-  console.log(`   • enabled: ${aiConfig.transcription.enabled}`);
-  console.log(`   • mode: ${aiConfig.transcription.mode}`);
-  console.log(`📌 إعدادات تحويل النص لكلام:`);
-  console.log(`   • enabled: ${aiConfig.tts.enabled}`);
-  
-  console.log("✅ تم تهيئة الإعدادات بنجاح!");
+  return JSON.parse(envValue.replace(/'/g, '"'));
 }
 
-// جلب قيمة إعداد معين
-export function getConfig(module: keyof IAiConfig, key: string): any {
-  try {
-    const moduleConfig = aiConfig[module];
-    if (moduleConfig && moduleConfig[key as keyof typeof moduleConfig] !== undefined) {
-      return moduleConfig[key as keyof typeof moduleConfig];
-    }
-    return null;
-  } catch (error) {
-    console.error(`خطأ في جلب الإعداد: ${module}.${key}`, error);
-    return null;
-  }
+function getEnvTranscriptionMode(): TranscriptionMode {
+  const envValue = process.env.TRANSCRIPTION_MODE?.toLowerCase();
+  if (envValue == undefined || envValue == "") return TranscriptionMode.Local;
+  return envValue as TranscriptionMode;
 }
 
-// تعيين قيمة إعداد معين
-export function setConfig(module: keyof IAiConfig, key: string, value: any): boolean {
-  try {
-    const moduleConfig = aiConfig[module];
-    if (moduleConfig) {
-      (moduleConfig as any)[key] = value;
-      console.log(`✅ تم تحديث الإعداد: ${module}.${key} = ${value}`);
-      
-      // تطبيق التغييرات المهمة فوراً
-      if (module === "gpt" && key === "maxModelTokens") {
-        console.log(`🔄 تم تحديث maxModelTokens إلى ${value}`);
-      }
-      
-      return true;
-    }
-    return false;
-  } catch (error) {
-    console.error(`خطأ في تعيين الإعداد: ${module}.${key}`, error);
-    return false;
-  }
+function getEnvTTSMode(): TTSMode {
+  const envValue = process.env.TTS_MODE?.toLowerCase();
+  if (envValue == undefined || envValue == "") return TTSMode.SpeechAPI;
+  return envValue as TTSMode;
 }
 
-// جلب جميع الإعدادات كنص
-export function getAllConfigs(): string {
-  let result = "📋 *إعدادات البوت الحالية*\n\n";
-  
-  result += "🤖 *GPT Settings:*\n";
-  result += `   • API Key: ${aiConfig.gpt.apiKey ? "✅ موجود" : "❌ غير موجود"}\n`;
-  result += `   • Max Tokens: ${aiConfig.gpt.maxModelTokens}\n\n`;
-  
-  result += "🎨 *DALL-E Settings:*\n";
-  result += `   • Image Size: ${aiConfig.dalle.size}\n\n`;
-  
-  result += "👥 *General Settings:*\n";
-  result += `   • Whitelist: ${aiConfig.general.whitelist.length > 0 ? aiConfig.general.whitelist.join(", ") : "الكل مسموح"}\n\n`;
-  
-  result += "🎤 *Transcription Settings:*\n";
-  result += `   • Enabled: ${aiConfig.transcription.enabled ? "✅" : "❌"}\n`;
-  result += `   • Mode: ${aiConfig.transcription.mode}\n\n`;
-  
-  result += "🔊 *TTS Settings:*\n";
-  result += `   • Enabled: ${aiConfig.tts.enabled ? "✅" : "❌"}\n\n`;
-  
-  result += "🖼️ *Stable Diffusion:*\n";
-  result += `   • Model: ${aiConfig.sd.model}\n`;
-  
-  return result;
+function getEnvAWSPollyVoiceEngine(): AWSPollyEngine {
+  const envValue = process.env.AWS_POLLY_VOICE_ENGINE?.toLowerCase();
+  if (envValue == undefined || envValue == "") return AWSPollyEngine.Standard;
+  return envValue as AWSPollyEngine;
 }
 
-// تصدير كل شيء
-export default { aiConfig, initAiConfig, getConfig, setConfig, getAllConfigs };
+export default config;
