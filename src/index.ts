@@ -1,13 +1,13 @@
 // src/index.ts
 import qrcode from "qrcode";
 import { Client, Message, Events, LocalAuth } from "whatsapp-web.js";
-import constants from "./constants";
-import * as cli from "./cli/ui";
-import { handleIncomingMessage } from "./handlers/message";
-import { initAiConfig } from "./handlers/ai-config";
-import { initOpenAI } from "./providers/openai";
-import { initDatabase } from "./database/subscription";
-import { BOT_INFO } from "./config";
+import constants from "./constants.js";
+import * as cli from "./cli/ui.js";
+import { handleIncomingMessage } from "./handlers/message.js";
+import { initAiConfig } from "./handlers/ai-config.js";
+import { initOpenAI } from "./providers/openai.js";
+import { initDatabase } from "./database/subscription.js";
+import { BOT_INFO } from "./config.js";
 
 let botReadyTimestamp: Date | null = null;
 
