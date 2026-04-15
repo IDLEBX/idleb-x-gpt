@@ -6,7 +6,7 @@ interface IConstants {
 
 const constants: IConstants = {
   statusBroadcast: "status@broadcast",
-  sessionPath: "./session" // مسار حفظ جلسة الواتساب
+  sessionPath: "./session"
 };
 
 export default constants;
